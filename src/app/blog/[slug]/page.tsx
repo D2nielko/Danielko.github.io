@@ -260,13 +260,14 @@ Graph algorithms form the backbone of many computer science applications. Unders
 };
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
-export default function BlogPost({ params }: PageProps) {
-  const post = blogPosts[params.slug];
+export default async function BlogPost({ params }: PageProps) {
+  const { slug } = await params;
+  const post = blogPosts[slug];
 
   if (!post) {
     notFound();

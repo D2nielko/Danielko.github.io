@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -15,7 +15,7 @@ export default function Home() {
               <a href="#projects" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Projects</a>
               <a href="#skills" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Skills</a>
               <a href="#experience" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Experience</a>
-              <a href="/blog" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Blog</a>
+              <Link href="/blog" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Blog</Link>
               <a href="#contact" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Contact</a>
             </div>
           </div>
@@ -55,12 +55,12 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-slate-600 dark:text-slate-300 mb-4">
-                I'm a dedicated Computer Science student with a passion for problem-solving and creating
+                I&apos;m a dedicated Computer Science student with a passion for problem-solving and creating
                 efficient, scalable software solutions. My journey in programming started with curiosity
                 and has evolved into a deep appreciation for clean code and innovative technology.
               </p>
               <p className="text-slate-600 dark:text-slate-300 mb-6">
-                When I'm not coding, you can find me contributing to open-source projects, learning new
+                When I&apos;m not coding, you can find me contributing to open-source projects, learning new
                 technologies, or participating in hackathons and coding competitions.
               </p>
               <div className="flex flex-wrap gap-2">
@@ -286,7 +286,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">Get In Touch</h2>
           <p className="text-xl text-slate-600 dark:text-slate-300 mb-8">
-            I'm always open to discussing new opportunities and interesting projects.
+            I&apos;m always open to discussing new opportunities and interesting projects.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <a href="mailto:your.email@example.com" className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline">
