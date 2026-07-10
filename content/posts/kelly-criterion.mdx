@@ -1,0 +1,89 @@
+---
+title: "The Kelly criterion, and why full Kelly is scary"
+date: "2026-05-30"
+description: "Deriving the Kelly bet size, then simulating why nobody actually bets full Kelly."
+category: "quant"
+---
+
+I kept seeing "Kelly criterion" mentioned in quant interview prep threads
+without a real explanation, so I derived it and then simulated it to see
+why practitioners always talk about "half-Kelly" instead of the real thing.
+
+## The setup
+
+Suppose you have a bet that wins with probability $p$ and pays out $b$-to-1
+(you stake $1, win $b$ if you're right, lose your $1 if you're wrong), and
+you can bet a fraction $f$ of your bankroll each round. Let $q = 1 - p$.
+The Kelly criterion says the growth-optimal fraction to bet is:
+
+$$
+f^* = p - \frac{q}{b}
+$$
+
+## Where it comes from
+
+The idea is to maximize the expected log of your wealth, not the expected
+wealth itself. If you bet fraction $f$, after one round your bankroll
+multiplies by $(1 + fb)$ on a win or $(1 - f)$ on a loss. Expected log
+growth per round is:
+
+$$
+g(f) = p \log(1 + fb) + q \log(1 - f)
+$$
+
+Taking the derivative and setting it to zero:
+
+$$
+g'(f) = \frac{pb}{1+fb} - \frac{q}{1-f} = 0
+$$
+
+Solving for $f$ gives exactly $f^* = p - q/b$. Maximizing log-wealth instead
+of raw expected wealth is the whole trick — it's what keeps you from
+betting everything on a favorable coin flip, because $\log(0)$ is
+$-\infty$ and the optimizer knows it.
+
+## Why full Kelly still hurts
+
+Full Kelly maximizes long-run growth rate, but it says nothing about the
+variance along the way. In practice your estimate of $p$ is never exact,
+and Kelly sizing is brutally sensitive to overestimating your edge — bet
+as if $p$ is 5 points higher than it really is and you can turn a
+positive-growth strategy into a losing one.
+
+I simulated 500 sequences of 200 bets each, at $p = 0.55$, $b = 1$
+(so $f^* = 0.10$), comparing full Kelly to half Kelly ($f^*/2$):
+
+```python
+import numpy as np
+
+def simulate(f, p=0.55, b=1.0, rounds=200, trials=500, seed=0):
+    rng = np.random.default_rng(seed)
+    wins = rng.random((trials, rounds)) < p
+    growth = np.where(wins, np.log(1 + f * b), np.log(1 - f))
+    log_wealth = growth.cumsum(axis=1)
+    return log_wealth[:, -1]
+
+f_full = 0.55 - 0.45 / 1.0  # 0.10
+final_full = simulate(f_full)
+final_half = simulate(f_full / 2)
+
+print("full Kelly  : mean", final_full.mean(), "std", final_full.std())
+print("half Kelly  : mean", final_half.mean(), "std", final_half.std())
+```
+
+On a run I did locally, full Kelly's mean final log-wealth was noticeably
+higher, but its standard deviation across trials was almost double half
+Kelly's. Half Kelly gives up roughly a quarter of the growth rate (it's a
+known result that betting $cf^*$ gives growth $\approx c(2-c)$ times the
+full-Kelly growth, so $c=0.5$ keeps 75%) for a much smoother ride.
+
+## The practical caveat
+
+This is the part that matters more than the formula: $f^*$ is only correct
+if you actually know $p$ and $b$. You don't. Any real edge estimate has
+error bars, and because the log-growth curve is concave and drops off
+sharply on the over-betting side, the cost of overestimating your edge is
+much worse than the cost of underestimating it. That asymmetry is the
+entire reason "fractional Kelly" (half or even quarter) is the practical
+default — it trades a bit of theoretical growth for a lot of robustness to
+being wrong about your own edge.
