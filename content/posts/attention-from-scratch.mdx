@@ -1,0 +1,94 @@
+---
+title: "Attention, from scratch"
+date: "2026-06-21"
+description: "Working through scaled dot-product attention until the numpy fits in my head."
+category: "frontier-ai"
+---
+
+I've read the "Attention Is All You Need" paper about four times now, and
+every time I nod along at the formula and then realize I can't actually
+reproduce it without looking. So this time I sat down and wrote the numpy
+version until it stuck.
+
+## The formula
+
+The core operation is scaled dot-product attention:
+
+$$
+\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+$$
+
+Each row of $Q$ is a query vector asking "what am I looking for," each row
+of $K$ is a key answering "what do I contain," and $V$ holds the actual
+content to mix together. The dot product $QK^\top$ scores how well each
+query matches each key, softmax turns those scores into weights that sum to
+1 per row, and the weighted sum of $V$ is the output.
+
+## Why divide by $\sqrt{d_k}$
+
+This part confused me the most at first. If $d_k$ is large, the dot
+products $q \cdot k$ tend to have larger variance (roughly $d_k$ times the
+variance of a single term, if the entries are independent with unit
+variance). Large logits push softmax into a regime where its gradient is
+tiny — one weight goes to nearly 1 and the rest to nearly 0. Dividing by
+$\sqrt{d_k}$ rescales the logits back to roughly unit variance before the
+softmax, which keeps gradients healthy during training. It's not a deep
+trick, it's just variance control.
+
+## Implementation
+
+```python
+import numpy as np
+
+def softmax(x, axis=-1):
+    x = x - np.max(x, axis=axis, keepdims=True)
+    e = np.exp(x)
+    return e / np.sum(e, axis=axis, keepdims=True)
+
+def attention(Q, K, V):
+    d_k = Q.shape[-1]
+    scores = Q @ K.T / np.sqrt(d_k)
+    weights = softmax(scores, axis=-1)
+    return weights @ V, weights
+
+seq_len, d_k, d_v = 4, 8, 8
+rng = np.random.default_rng(0)
+Q = rng.normal(size=(seq_len, d_k))
+K = rng.normal(size=(seq_len, d_k))
+V = rng.normal(size=(seq_len, d_v))
+
+out, weights = attention(Q, K, V)
+print(out.shape, weights.sum(axis=-1))  # (4, 8), all ones
+```
+
+Running this with `seq_len = 4` and printing `weights` makes the mechanism
+concrete: each row is a probability distribution over the 4 positions, and
+`out` is just a convex combination of the rows of `V`.
+
+## Shapes, laid out
+
+It's easy to lose track of which matrix has which shape once you add a
+batch dimension, so here's the reference table I keep next to my editor:
+
+| Tensor | Shape | Meaning |
+| --- | --- | --- |
+| $Q$ | $(n, d_k)$ | queries |
+| $K$ | $(m, d_k)$ | keys |
+| $V$ | $(m, d_v)$ | values |
+| $QK^\top$ | $(n, m)$ | raw attention scores |
+| output | $(n, d_v)$ | weighted combination of values |
+
+Note $Q$ and $K$ share the same last dimension $d_k$ because they need to
+be dot-producted together, but $V$ can have a different dimension $d_v$
+entirely — the output just inherits $V$'s width.
+
+## What's next
+
+Two things I want to chase down next. First, the KV cache trick used at
+inference time: since keys and values for previous tokens don't change as
+you decode, autoregressive generation caches them instead of recomputing
+$K$ and $V$ from scratch every step. Second, multi-head attention — instead
+of one $(Q,K,V)$ triple, you split into $h$ smaller heads that each learn
+different notions of "relevant," then concatenate the outputs. Both feel
+like natural extensions of the single-head version above, so I'll implement
+them next and see if that intuition holds up.

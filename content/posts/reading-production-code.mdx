@@ -1,0 +1,54 @@
+---
+title: "What I learned reading a production codebase as a junior"
+date: "2026-04-18"
+description: "Tracing data flow before reading line by line, and treating tests and git history as documentation."
+category: "swe"
+---
+
+My first real exposure to a large production codebase was humbling. It was
+maybe 200k lines, no single person understood all of it, and my instinct —
+open the entry point and read top to bottom — fell apart within an hour.
+Here's what actually worked.
+
+## Trace data flow before reading line by line
+
+Instead of reading files in whatever order they're organized, I started
+from a concrete request (a specific API call, a specific button click) and
+followed the data through the system: where it enters, what transforms it,
+where it gets persisted, what reads it back out. That gave me a skeleton to
+hang the details on. Reading a function in isolation tells you what it
+does; reading it in the context of one real request tells you why it
+exists.
+
+## Tests are the documentation that can't lie
+
+The actual docs were stale — nobody had time to update them. But the test
+suite couldn't get away with that, because stale tests just fail. When I
+wanted to understand what a module was supposed to guarantee, I read its
+tests before its implementation. Test names read like a spec:
+`rejects_expired_token`, `retries_on_timeout_up_to_three_times`. That's
+more reliable than any comment, because it's checked on every CI run.
+
+## `git log` and `git blame` as narrative
+
+`git blame` on a confusing block of code, followed by `git log` on the
+commit it points to, usually surfaces the PR or the linked issue that
+explains why the code looks the way it does. Weird-looking code is often
+weird for a reason — a bug fix, a workaround for some upstream behavior — and
+that reason is almost always sitting in the commit message if you look:
+
+```
+git log -p --follow -- path/to/file.py | less
+```
+
+Reading the history in order, instead of just the current snapshot, turned
+a lot of "why would anyone write it like this" moments into "oh, that
+makes sense now."
+
+## The pattern
+
+All three of these share something: they're ways of recovering intent that
+isn't visible in the code itself. A junior reading code top-to-bottom sees
+what happens. Tracing real requests, reading tests, and reading history are
+how you get to why. I don't think that's a shortcut you can skip while
+you're new to a codebase — it's closer to the actual skill.
