@@ -9,12 +9,12 @@ interface PageProps {
 }
 
 export function generateStaticParams() {
-  return getPosts("posts").map(({ slug }) => ({ slug }));
+  return getPosts("icpc").map(({ slug }) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPost("posts", slug);
+  const post = getPost("icpc", slug);
   if (!post) {
     return {};
   }
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function Page({ params }: PageProps) {
   const { slug } = await params;
-  const post = getPost("posts", slug);
+  const post = getPost("icpc", slug);
 
   if (!post) {
     notFound();
